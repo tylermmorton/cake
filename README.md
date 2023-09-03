@@ -1,8 +1,8 @@
 # cake
 
-`cake` is a simple package that uses Go generics, type embedding and the `reflect` package to provide a powerful pattern for layering Go interface implementations.
+`cake` is a package that uses Go generics, type embedding and the `reflect` package together to provide a powerful pattern for layering Go interface implementations.
 
-Another great way to think about `cake` is as middleware for your Go interfaces, as cake was inspired by [`net/http` middleware](https://pkg.go.dev/net/http#Handler).
+Another great way to think about `cake` layering is like middleware for your Go interfaces, as cake was inspired by [`net/http` middlewares](https://pkg.go.dev/net/http#Handler).
 
 **Goals**
 - Promote the usage of the [Layered Architecture](https://en.wikipedia.org/wiki/Multitier_architecture) pattern in Go
@@ -18,14 +18,14 @@ go get github.com/tylermmorton/cake
 
 ### Base
 
-Every cake has a base. The base is the first layer of the cake and is the only layer that is required. The base is a struct that completely implements the interface that you would like to add layers to.
+Every layered cake must start with a base. The base is the first layer of the cake and it supports all of the other layers, therefore it is required. In code, the base is a struct that implements the interface that you would like to add layers to. Chances are you already have an interface implementation that is suitable as a base layer.
 
 ```go
 package main
 
 import "context"
 
-// Service is a hypothetical chat service
+// Service is a hypothetical chat service that is able to get/set messages in a database
 type Service interface {
     GetMessage(ctx context.Context, id string) string
     CreateMessage(ctx context.Context, msg string) error
@@ -35,16 +35,19 @@ type baseLayer struct {
     // ...	
 }
 
-func (b *baseLayer) GetMessage(ctx context.Context, id string) string {
-    // ...
+func (l *baseLayer) GetMessage(ctx context.Context, id string) string {
+    return l.db.GetMessage(ctx, id)
 }
 
-func (b *baseLayer) CreateMessage(ctx context.Context, msg string) error {
-    // ...
+func (l *baseLayer) CreateMessage(ctx context.Context, msg string) error {
+    return l.db.CreateMessage(ctx, msg)
 }
 ```
 
-Once you have a base layer established you can start constructing your cake:
+### Construction
+
+Once you have a base established you can start constructing your layered cake by simply calling the generic function `Layered`:
+
 ```go
 package main
 
@@ -59,7 +62,15 @@ func NewService() (Service, error) {
 }
 ```
 
-Cakes with only a base layer will function as a very thin wrapper and will have no difference from the base layer itself. But really, what is that exciting about a cake with only one layer? The real power of `cake` comes from adding additional layers to your interface. 
+The signature of `Layered` is as follows:
+
+```go
+func Layered[T interface{}](base T, layers ...T) (T, error)
+```
+
+`Layered` takes a `base` layer and any number of additional layers to add. 
+
+Providing just a base for a cake will still work. But really, what is exciting about a cake with only one layer? The real power of `cake` comes from adding additional layers to your interface. 
 
 ### Layers
 
@@ -77,24 +88,31 @@ func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
 ```
 
 And don't forget to add the layer to your cake:
+
 ```go
 func NewService() (Service, error) {
     return cake.Layered[Service](
-        &baseLayer{}, 
-        &loggingLayer{}, 
+        &baseLayer{}, // <- base
+        &loggingLayer{}, // <- layer[0]
     )
 }
 ```
-#### Fallthroughs
 
-You might be thinking: The `loggingLayer` in the example above does not implement the `CreateMessage` method! And you would be correct. When a method is called on a layer that doesn't implement it, cake will _fallthrough_ to the next layer that has a valid implementation. And again, if there is no "next" layer, cake will fallthrough all the way to the base layer.
+Now, when calling `GetMessage` on our layered `Service`, each layer will be called in the order it was provided, with the base layer being the final layer in the call stack.
 
-## Strategies
+### Fallthroughs
 
-### Deferred work
-Just like with `net/http` middleware, a powerful feature of layered architecture is the ability to defer work until other layers have completed. This is especially useful for things like logging, metrics, tracing, etc.
+Those with a keen eye will notice that the `loggingLayer` in the example above does not implement the `CreateMessage` method! When a method is called on a layer that doesn't implement it, cake will _fallthrough_ to the "next layer" that has a valid implementation. And again, if there is no "next layer", cake will fallthrough all the way to the base layer.
 
-Below, the `loggingLayer` is able to defer its work until _after_ all other layers are done, so it can use the result of the call in its log statement.
+## Patterns
+
+Below are some useful patterns that can be leveraged in an application built with a layered architecture.
+
+### Yield
+
+Just like with `net/http` middleware, a powerful feature of layered architecture is the ability to yield until other layers have completed their work. This is especially useful for layering auxillary systems such as logging, metrics, tracing, etc. This could also be known in some systems as 'deferred work' or 'exitware.'
+
+Below is a modified version of the `loggingLayer` from earlier, but now it calls into the next layer _before_ logging any output. This allows you to wait until other layers have finished their work and returned a result before printing a log, making the log statement much more detailed and useful.
 
 ```go
 type loggingLayer struct {
@@ -112,6 +130,7 @@ func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
 ```
 
 ### Conditional work
+
 It may be useful to execute some work conditionally. For example, you may want to be able to enable/disable the logging system in your application.
 
 ```go
@@ -134,6 +153,7 @@ func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
 ```
 
 ### Short-circuiting
+
 Another powerful feature of layered architecture is the ability to short-circuit the call stack and return early. This is especially useful for things like authorization, validation, etc.
 
 Below, this hypothetical `authLayer` is able to short-circuit the call stack of the cake and return early if the user is not authorized to perform the requested action.
