@@ -1,5 +1,7 @@
 # cake
 
+![Gopher eating cake]([http://url/to/img.png](https://full-stack.blend.com/how-we-write-github-actions-in-go/gopher-cake-art.png))
+
 `cake` is a simple package that uses Go generics, type embedding and the `reflect` package to provide a powerful pattern for layering Go interface implementations.
 
 Another great way to think about `cake` is as middleware for your Go interfaces, as cake was inspired by [`net/http` middleware](https://pkg.go.dev/net/http#Handler).
