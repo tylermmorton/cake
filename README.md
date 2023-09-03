@@ -139,13 +139,13 @@ type loggingLayer struct {
 }
 
 func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
+    // Call into the next layer and skip logging if its not enabled.
     if os.Getenv("LOGGING_ENABLED") != "true" {
         return l.Service.GetMessage(ctx, id)
     }
 	
     msg := l.Service.GetMessage(ctx, id)
 	
-    // After other layers have completed their work, it's time to log the result
     log.Printf("GetMessage %s: %q", id. msg)
 	
     return msg
@@ -154,7 +154,7 @@ func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
 
 ### Short-circuiting
 
-Another powerful feature of layered architecture is the ability to short-circuit the call stack and return early. This is especially useful for things like authorization, validation, etc.
+Another powerful feature of layered architecture is the ability to short-circuit the call stack and return early. This is especially useful for things like authorization, validation, memoization, caching, etc.
 
 Below, this hypothetical `authLayer` is able to short-circuit the call stack of the cake and return early if the user is not authorized to perform the requested action.
 
