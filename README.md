@@ -2,7 +2,7 @@
 
 `cake` is a package that uses Go generics, type embedding and the `reflect` package together to provide a powerful pattern for layering Go interface implementations.
 
-Another great way to think about `cake` layering is like middleware for your Go interfaces, as cake was inspired by [`net/http` middlewares](https://pkg.go.dev/net/http#Handler).
+Another great way to think about `cake` layering is like middleware for your Go interfaces, as cake was inspired by patterns commonly associated with [`net/http` middlewares](https://pkg.go.dev/net/http#Handler).
 
 **Goals**
 - Promote the usage of the [Layered Architecture](https://en.wikipedia.org/wiki/Multitier_architecture) pattern in Go
