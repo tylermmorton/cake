@@ -129,9 +129,33 @@ func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
 }
 ```
 
+### Conditional layers
+
+It may be useful add layers to a cake conditionally. For example, you may want to be able to enable/disable the logging system in your application.
+
+```go
+func NewService() (Service, error) {
+    return cake.Layered[Service](
+        &baseLayer{}, // <- base
+        cake.If(os.Getenv("LOGGING_ENABLED") == "true", &loggingLayer{}),
+    )
+}
+```
+
+For layers that have their own setup or use a lot of memory after construction, use a callback:
+
+```go
+func NewService() (Service, error) {
+    return cake.Layered[Service](
+        &baseLayer{}, // <- base
+        cake.IfCallback(os.Getenv("LOGGING_ENABLED") == "true", func() { return newLoggingLayer() }),
+    )
+}
+```
+
 ### Conditional work
 
-It may be useful to execute some work conditionally. For example, you may want to be able to enable/disable the logging system in your application.
+Instead of skipping an entire layer, you can choose to skip work in individual methods by simply returning the next layer:
 
 ```go
 type loggingLayer struct {
@@ -139,7 +163,7 @@ type loggingLayer struct {
 }
 
 func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
-    // Call into the next layer and skip logging if its not enabled.
+    // Return the next layer and skip logging if its not enabled.
     if os.Getenv("LOGGING_ENABLED") != "true" {
         return l.Service.GetMessage(ctx, id)
     }

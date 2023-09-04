@@ -79,6 +79,26 @@ func Test_Layers(t *testing.T) {
 			expectedFruits:  []string{"Apple", "Durian", "Banana"},
 			expectedVeggies: []string{"Artichoke", "Dill", "Cilantro", "Basil"},
 		},
+		"If returns a nil layer when the given condition is false": {
+			baseLayer: &LayerA{},
+			layers: []Service{
+				&LayerB{},
+				If(false, &LayerC{}),
+				&LayerD{},
+			},
+			expectedFruits:  []string{"Apple", "Durian", "Banana"},
+			expectedVeggies: []string{"Artichoke", "Dill", "Basil"},
+		},
+		"IfCallback does not call its callback when the given condition is false": {
+			baseLayer: &LayerA{},
+			layers: []Service{
+				&LayerB{},
+				IfCallback(false, func() Service { panic("i should not execute") }),
+				&LayerD{},
+			},
+			expectedFruits:  []string{"Apple", "Durian", "Banana"},
+			expectedVeggies: []string{"Artichoke", "Dill", "Basil"},
+		},
 	}
 	for name, testCase := range testTable {
 		t.Run(name, func(t *testing.T) {
