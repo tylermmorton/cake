@@ -177,23 +177,30 @@ func NewService() (Service, error) {
 
 ### Conditional work
 
-Instead of skipping an entire layer, you can choose to skip work in individual methods by simply returning the next layer:
+Instead of skipping the addition of an entire layer, you can choose to skip work within a layer by simply returning a call to the next one. 
+
+In this hypothetical authorization layer, we are always checking for the user session, but conditionally checking the user's permissions based on an environment variable:
 
 ```go
-type loggingLayer struct {
+type authLayer struct {
     Service
 }
 
-func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
-    // Return the next layer and skip logging if its not enabled.
-    if os.Getenv("LOGGING_ENABLED") != "true" {
-        return l.Service.GetMessage(ctx, id)
-    }
-	
-    msg := l.Service.GetMessage(ctx, id)
-	
-    log.Printf("GetMessage %s: %q", id, msg)
-	
-    return msg
+func (l *authLayer) CreateMessage(ctx context.Context, msg string) (*model.User, error) {
+	_, err := rcontext.GetSession(ctx)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+    // if permission-based-access-control is disabled, return a call to the next layer
+	if os.Getenv("PBAC_ENABLED") != "true" {
+		return l.Service.CreateMessage(ctx, msg)
+	}
+
+	if !l.pbac.HasPermission(ctx, "message.create") {
+		return nil, ErrUnauthorized
+	}
+
+	return l.Service.CreateMessage(ctx, msg)
 }
 ```
