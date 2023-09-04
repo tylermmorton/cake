@@ -123,15 +123,35 @@ func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
     msg := l.Service.GetMessage(ctx, id) // <- call the next layer, in this case: 'baseLayer'
 	
     // After other layers have completed their work, it's time to log the result
-    log.Printf("GetMessage %s: %q", id. msg)
+    log.Printf("GetMessage %s: %q", id, msg)
 	
     return msg
 }
 ```
 
+### Short-circuiting
+
+Another powerful feature of layered architecture is the ability to short-circuit the call stack and return early. This is especially useful for things like authorization, validation, memoization, caching, etc.
+
+Below, this hypothetical `authLayer` is able to short-circuit the call stack of the cake and return early if the user is not authorized to perform the requested action.
+
+```go
+type authLayer struct {
+    Service
+}
+
+func (l *authLayer) CreateMessage(ctx context.Context, msg string) error {
+    if !l.authorized(ctx) {
+        return ErrUnauthorized
+    }
+    
+    return l.Service.CreateMessage(ctx, msg) // <- call the next layer, in this case: 'baseLayer'
+}
+```
+
 ### Conditional layers
 
-It may be useful add layers to a cake conditionally. For example, you may want to be able to enable/disable the logging system in your application.
+It may be useful to add layers to a cake conditionally. For example, you may want to be able to enable/disable the logging system in your application.
 
 ```go
 func NewService() (Service, error) {
@@ -170,28 +190,8 @@ func (l *loggingLayer) GetMessage(ctx context.Context, id string) string {
 	
     msg := l.Service.GetMessage(ctx, id)
 	
-    log.Printf("GetMessage %s: %q", id. msg)
+    log.Printf("GetMessage %s: %q", id, msg)
 	
     return msg
-}
-```
-
-### Short-circuiting
-
-Another powerful feature of layered architecture is the ability to short-circuit the call stack and return early. This is especially useful for things like authorization, validation, memoization, caching, etc.
-
-Below, this hypothetical `authLayer` is able to short-circuit the call stack of the cake and return early if the user is not authorized to perform the requested action.
-
-```go
-type authLayer struct {
-    Service
-}
-
-func (l *authLayer) CreateMessage(ctx context.Context, msg string) error {
-    if !l.authorized(ctx) {
-        return ErrUnauthorized
-    }
-    
-    return l.Service.CreateMessage(ctx, msg) // <- call the next layer, in this case: 'baseLayer'
 }
 ```
