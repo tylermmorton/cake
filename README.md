@@ -1,3 +1,5 @@
+[![Commit verification](https://github.com/tylermmorton/cake/actions/workflows/verify.yaml/badge.svg)](https://github.com/tylermmorton/cake/actions/workflows/verify.yaml)
+
 # cake
 
 `cake` is a package that uses Go generics, type embedding and the `reflect` package together to provide a powerful pattern for layering Go interface implementations.
