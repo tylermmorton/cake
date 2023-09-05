@@ -53,6 +53,7 @@ func Layered[T interface{}](base T, layers ...T) (T, error) {
 		return base, nil
 	}
 
+	var entryLayer = -1
 	// get the name of T, which is the interface that all layers implement
 	var interfaceName = strings.Split(fmt.Sprintf("%T", new(T)), ".")[1]
 
@@ -62,6 +63,10 @@ func Layered[T interface{}](base T, layers ...T) (T, error) {
 		curLayerValue, ok := getLayerValue(layers[i])
 		if !ok {
 			continue
+		}
+
+		if entryLayer == -1 {
+			entryLayer = i
 		}
 
 		curLayerValue = curLayerValue.Elem()
@@ -104,5 +109,6 @@ func Layered[T interface{}](base T, layers ...T) (T, error) {
 			break
 		}
 	}
-	return layers[0], nil
+
+	return layers[entryLayer], nil
 }

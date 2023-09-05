@@ -68,6 +68,20 @@ func Test_Layers(t *testing.T) {
 			expectedFruits:  []string{"Apple", "Durian", "Banana"},
 			expectedVeggies: []string{"Artichoke", "Dill", "Cilantro", "Basil"},
 		},
+		"Properly sets the entry layer when one or more of the first layers are nil": {
+			baseLayer: &LayerA{},
+			layers: []Service{
+				If(false, &LayerC{}),
+				If(false, &LayerC{}),
+				&LayerB{},
+				&LayerC{},
+				&LayerE{},
+				If(false, &LayerC{}),
+				&LayerD{},
+			},
+			expectedFruits:  []string{"Apple", "Durian", "Banana"},
+			expectedVeggies: []string{"Artichoke", "Dill", "Cilantro", "Basil"},
+		},
 		"Falls through layers with nil method implementations": {
 			baseLayer: &LayerA{},
 			layers: []Service{
@@ -79,7 +93,7 @@ func Test_Layers(t *testing.T) {
 			expectedFruits:  []string{"Apple", "Durian", "Banana"},
 			expectedVeggies: []string{"Artichoke", "Dill", "Cilantro", "Basil"},
 		},
-		"Falls through one or many consecutive nil values": {
+		"Falls through one or many consecutive nil layers": {
 			baseLayer: &LayerA{},
 			layers: []Service{
 				&LayerB{},
