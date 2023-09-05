@@ -79,6 +79,20 @@ func Test_Layers(t *testing.T) {
 			expectedFruits:  []string{"Apple", "Durian", "Banana"},
 			expectedVeggies: []string{"Artichoke", "Dill", "Cilantro", "Basil"},
 		},
+		"Falls through one or many consecutive nil values": {
+			baseLayer: &LayerA{},
+			layers: []Service{
+				&LayerB{},
+				&LayerC{},
+				If(false, &LayerC{}),
+				If(false, &LayerC{}),
+				&LayerE{},
+				If(false, &LayerC{}),
+				&LayerD{},
+			},
+			expectedFruits:  []string{"Apple", "Durian", "Banana"},
+			expectedVeggies: []string{"Artichoke", "Dill", "Cilantro", "Basil"},
+		},
 		"If returns a nil layer when the given condition is false": {
 			baseLayer: &LayerA{},
 			layers: []Service{
